@@ -4,14 +4,19 @@ import { useState } from "react";
 
 export default function Home() {
   const [message, setMessage] = useState("");
-  const [reply, setReply] = useState("");
   const [loading, setLoading] = useState(false);
+  const [chat, setChat] = useState<
+    { role: "user" | "ai"; text: string }[]
+  >([]);
 
   const sendMessage = async () => {
     if (!message) return;
 
+    const userMessage = message;
+    setMessage("");
+
+    setChat((prev) => [...prev, { role: "user", text: userMessage }]);
     setLoading(true);
-    setReply("");
 
     try {
       const res = await fetch("/api/chat", {
@@ -19,27 +24,32 @@ export default function Home() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ message }),
+        body: JSON.stringify({ message: userMessage }),
       });
 
       const data = await res.json();
 
-      setReply(data.reply);
+      setChat((prev) => [
+        ...prev,
+        { role: "ai", text: data.reply },
+      ]);
     } catch (err) {
-      console.log(err);
-      setReply("Error calling API");
+      setChat((prev) => [
+        ...prev,
+        { role: "ai", text: "Error calling AI" },
+      ]);
     }
 
     setLoading(false);
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-black text-white p-6">
+    <div className="min-h-screen flex flex-col items-center bg-gray-100 text-black p-6">
       <h1 className="text-3xl font-bold mb-6">🤖 My AI Platform</h1>
 
-      <div className="w-full max-w-xl flex gap-2">
+      <div className="w-full max-w-xl flex gap-2 mb-4">
         <input
-          className="flex-1 p-3 rounded text-black"
+          className="flex-1 p-3 border rounded"
           placeholder="اكتب سؤالك..."
           value={message}
           onChange={(e) => setMessage(e.target.value)}
@@ -47,19 +57,26 @@ export default function Home() {
 
         <button
           onClick={sendMessage}
-          className="bg-blue-600 px-4 py-2 rounded"
+          className="bg-blue-600 text-white px-4 py-2 rounded"
         >
           Send
         </button>
       </div>
 
-      {loading && <p className="mt-4">⏳ AI is thinking...</p>}
+      <div className="w-full max-w-xl space-y-3">
+        {chat.map((c, i) => (
+          <div
+            key={i}
+            className={`p-3 rounded border ${
+              c.role === "user" ? "bg-blue-100" : "bg-white"
+            }`}
+          >
+            <b>{c.role === "user" ? "You" : "AI"}:</b> {c.text}
+          </div>
+        ))}
+      </div>
 
-      {reply && (
-        <div className="mt-6 p-4 bg-zinc-800 rounded max-w-xl w-full">
-          <p>{reply}</p>
-        </div>
-      )}
+      {loading && <p className="mt-4">⏳ Thinking...</p>}
     </div>
   );
 }
