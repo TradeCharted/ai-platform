@@ -2,7 +2,7 @@ export async function POST(req: Request) {
   const { message } = await req.json();
 
   const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${process.env.GEMINI_API_KEY}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
     {
       method: "POST",
       headers: {
@@ -10,7 +10,9 @@ export async function POST(req: Request) {
       },
       body: JSON.stringify({
         contents: [
-          { parts: [{ text: message }] }
+          {
+            parts: [{ text: message }],
+          },
         ],
       }),
     }
@@ -18,9 +20,11 @@ export async function POST(req: Request) {
 
   const data = await response.json();
 
-  return Response.json({
-    reply:
-      data.candidates?.[0]?.content?.parts?.[0]?.text ||
-      "No response",
-  });
+  console.log("DEBUG:", JSON.stringify(data)); // مهم للتشخيص
+
+  const reply =
+    data?.candidates?.[0]?.content?.parts?.[0]?.text ||
+    "AI did not return a response";
+
+  return Response.json({ reply });
 }
