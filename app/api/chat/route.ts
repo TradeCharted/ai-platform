@@ -1,33 +1,26 @@
 export async function POST(req: Request) {
-  try {
-    const { message } = await req.json();
+  const { message } = await req.json();
 
-    console.log("MESSAGE RECEIVED:", message);
-
-    const response = await fetch("http://localhost:11434/api/generate", {
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${process.env.GEMINI_API_KEY}`,
+    {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "llama3",
-        prompt: message,
-        stream: false,
+        contents: [
+          { parts: [{ text: message }] }
+        ],
       }),
-    });
+    }
+  );
 
-    const data = await response.json();
+  const data = await response.json();
 
-    console.log("OLLAMA RESPONSE:", data);
-
-    return Response.json({
-      reply: data.response,
-    });
-  } catch (err) {
-    console.error("API ERROR:", err);
-
-    return Response.json({
-      reply: "Server error - check terminal",
-    });
-  }
+  return Response.json({
+    reply:
+      data.candidates?.[0]?.content?.parts?.[0]?.text ||
+      "No response",
+  });
 }
